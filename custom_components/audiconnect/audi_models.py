@@ -596,6 +596,11 @@ class Vehicle:
         self.model_year: str = ""
         self.model_family: str = ""
         self.title: str = ""
+        self.charging_profiles = []
+        self.charging_profiles_count = 0
+
+    def get_charging_profile_count(self):
+        return self.charging_profiles_count
 
     def parse(self, data: dict[str, Any]) -> None:
         self.vin = data.get("vin")
@@ -617,6 +622,29 @@ class Vehicle:
             and data.get("vehicle").get("media") is not None
         ):
             self.title = data.get("vehicle").get("media").get("shortName")
+            
+        if hasattr(data, "charging_profiles"):
+            self.charging_profiles = data.charging_profiles
+            self.charging_profiles_count = data.charging_profiles_count
+            
+        elif isinstance(data, dict) and ("chargingProfiles" in data or "chargingProfilesStatus" in str(data)):
+            from .util import get_attr
+            profiles_data = get_attr(
+                data,
+                "chargingProfiles.chargingProfilesStatus.value.profiles",
+                []
+            )
+            self.charging_profiles = []
+            for profile in profiles_data:
+                self.charging_profiles.append({
+                    "id": profile.get("id"),
+                    "name": profile.get("name", "Unnamed"),
+                    "targetSOC_pct": profile.get("targetSOC_pct"),
+                    "minSOC_pct": profile.get("minSOC_pct"),
+                    "maxChargingCurrent": profile.get("maxChargingCurrent"),
+                    "minSOC_enabled": profile.get("minSOC_enabled", False),
+                })
+            self.charging_profiles_count = len(self.charging_profiles)
 
     def __str__(self) -> str:
         return str(self.__dict__)
