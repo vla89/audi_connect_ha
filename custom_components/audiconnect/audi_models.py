@@ -279,7 +279,36 @@ class VehicleDataResponse:
                 "remainingClimatisationTime_min",
             ],
         )
+        self._parse_charging_profiles(data)
 
+    def _parse_charging_profiles(self, data: dict[str, Any]) -> None:
+        from .util import get_attr
+        
+        profiles_data = get_attr(
+            data,
+            "chargingProfiles.chargingProfilesStatus.value.profiles",
+            []
+        )
+        
+        if not profiles_data:
+            profiles_data = get_attr(
+                data,
+                "charging.chargingProfiles.chargingProfilesStatus.value.profiles",
+                []
+            )
+
+        self.charging_profiles = []
+        for profile in profiles_data:
+            self.charging_profiles.append({
+                "id": profile.get("id"),
+                "name": profile.get("name", "Unnamed"),
+                "targetSOC_pct": profile.get("targetSOC_pct"),
+                "minSOC_pct": profile.get("minSOC_pct"),
+                "maxChargingCurrent": profile.get("maxChargingCurrent"),
+                "minSOC_enabled": profile.get("minSOC_enabled", False),
+            })
+        self.charging_profiles_count = len(self.charging_profiles)
+    
     def _tryAppendStateWithTs(
         self, json: dict[str, Any], name: str, tsoff: int, loc: list[str]
     ) -> None:
