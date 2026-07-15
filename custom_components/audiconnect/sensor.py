@@ -51,9 +51,22 @@ def _trip_data_value(vehicle: Any, attr_key: str) -> Any:
 
 
 def _charging_profiles_attrs(vehicle: Any) -> dict[str, Any]:
-    """Extract charging profiles list as extra attributes."""
-    return {"profiles": getattr(vehicle, "charging_profiles", [])}
-
+    """Extract charging profiles list and flatten them into separate attributes."""
+    attrs = {}
+    profiles_list = getattr(vehicle, "charging_profiles", [])
+    
+    attrs["profiles"] = profiles_list
+    
+    for profile in profiles_list:
+        p_id = profile.get("id")
+        if p_id is not None:
+            attrs[f"profile_{p_id}_name"] = profile.get("name")
+            attrs[f"profile_{p_id}_target_soc"] = profile.get("targetSOC_pct")
+            attrs[f"profile_{p_id}_min_soc"] = profile.get("minSOC_pct")
+            attrs[f"profile_{p_id}_max_current"] = profile.get("maxChargingCurrent")
+            attrs[f"profile_{p_id}_min_soc_enabled"] = profile.get("minSOC_enabled")
+            
+    return attrs
 
 def _trip_data_attrs(vehicle: Any, attr_key: str) -> dict[str, Any]:
     """Extract extra attributes from trip data dict."""
@@ -400,8 +413,10 @@ SENSOR_DESCRIPTIONS: tuple[AudiSensorEntityDescription, ...] = (
         name="Charging Profiles",
         icon="mdi:account-cog",
         entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda v: len(getattr(v, "charging_profiles", [])),
         extra_attrs_fn=_charging_profiles_attrs,
     ),
+    
 )
 
 
