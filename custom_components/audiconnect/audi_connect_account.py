@@ -760,6 +760,9 @@ class AudiConnectVehicle:
             # Update other states
             for state in status.states:
                 self._vehicle.state[state["name"]] = state["value"]
+                
+            if hasattr(status, "charging_profiles"):
+                self._vehicle.state["charging_profiles"] = status.charging_profiles
 
         except TimeoutError:
             raise
@@ -2132,3 +2135,15 @@ class AudiConnectVehicle:
     def is_moving_supported(self):
         """Return true if vehicle can move."""
         return True
+
+    @property
+    def charging_profiles(self):
+        """Return charging profiles list."""
+        return self._vehicle.state.get("charging_profiles", [])
+
+    @property
+    def charging_profiles_count(self):
+        """Return charging profiles count."""
+        profiles = self._vehicle.state.get("charging_profiles", [])
+        return len(profiles)
+        
